@@ -58,6 +58,35 @@ involved.
 
 [^1]: The files as they currently exist on disk.
 
+### Keeping Track of What You've Already Reviewed
+
+The file panel shows a summary of the changes at the top:
+
+```
+Total:      +142 -37
+Unreviewed: +58 -12
+```
+
+`Total` is the number of added and deleted lines across all the entries in the
+panel, and `Unreviewed` counts only the entries that haven't been marked as
+reviewed yet.
+
+Press `<leader>r` (`actions.toggle_reviewed`, also available as
+`:DiffviewToggleReviewed`) to toggle the reviewed state of the file under the
+cursor in the file panel, or of the file currently open in the view. Reviewed
+files get a check mark and are grayed out, and in the tree listing style a
+directory is grayed out once everything in it has been reviewed. Pressing it on
+a directory marks all the files it contains as reviewed at once.
+
+A file is unmarked again as soon as its diff changes - if its status or its
+added/deleted line counts change, if it's edited on disk while the working tree
+is one of the sides of the diff (`--imply-local`, or `:DiffviewOpen` with no
+rev), or if it drops out of the file list entirely. So a mark always means
+"I've reviewed the changes that are showing right now".
+
+The reviewed state lives for as long as the Diffview is open, and is only
+available in a Diffview - not in the file history view.
+
 ### Comparing Changes From the Individual PR Commits
 
 If you're reviewing a big PR composed of many commits, you might prefer to

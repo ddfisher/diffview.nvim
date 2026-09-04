@@ -44,6 +44,44 @@ These features include:
 
 Visit the help page for more info.
 
+                                                *diffview-review-tracking*
+Review Tracking ~
+
+The file panel of a Diffview shows a summary of the changes at the top:
+
+>
+    Total:      +142 -37
+    Unreviewed: +58 -12
+<
+
+`Total` is the sum of the added and deleted lines across all the entries in
+the panel. `Unreviewed` is the same sum, but counting only the entries that
+have not been marked as reviewed. Entries without line stats - such as
+untracked files and binaries - are not counted.
+
+Use |diffview-actions-toggle_reviewed| (`<leader>r` by default, or
+|:DiffviewToggleReviewed|) to toggle the reviewed state of a file. Reviewed
+files are marked with a check mark, and are grayed out in the file panel
+(see the `DiffviewFilePanelReviewed` highlight group). In the file tree
+listing style, a directory is grayed out once all the files it contains have
+been marked as reviewed.
+
+The reviewed state is only kept for as long as the Diffview is open, and is
+tracked by file path: entries that are recreated when the file list is updated
+keep their state.
+
+A file is unmarked again when its diff changes, such that you don't carry a
+stale mark for a file you'll want to look at again. This happens when:
+
+        • The file's status, or its number of added or deleted lines changed.
+        • The file is edited on disk, while the working tree is one of the
+          sides of the diff (as with `:DiffviewOpen` with no rev, or with the
+          `--imply-local` flag). When the diff is between two revs, the working
+          tree is not part of it, and editing a file has no effect on its mark.
+        • The file no longer has any changes, and drops out of the file list.
+
+NOTE: This is only available in a Diffview - not in the file history view.
+
 ------------------------------------------------------------------------------
 
 COMMANDS                                        *diffview-commands*
@@ -375,6 +413,10 @@ COMMANDS                                        *diffview-commands*
 
                                                 *:DiffviewFocusFiles*
 :DiffviewFocusFiles     Brings focus to the file panel. Opens it if it's closed.
+
+                                                *:DiffviewToggleReviewed*
+:DiffviewToggleReviewed Toggle the reviewed state of the current file. See
+                        |diffview-review-tracking|.
 
                                                 *:DiffviewRefresh*
 :DiffviewRefresh        Update stats and entries in the file list of the
@@ -1216,6 +1258,14 @@ toggle_fold                                     *diffview-actions-toggle_fold*
 
         Collapse / expand the fold of the subject.
 
+toggle_reviewed                                 *diffview-actions-toggle_reviewed*
+        Contexts: `diff_view`, `file_panel`
+
+        Toggle the reviewed state of the subject. If the subject is a
+        directory in the file tree listing style, all the files it contains
+        are marked as reviewed, unless they all already are, in which case
+        they are all unmarked. See |diffview-review-tracking|.
+
 toggle_stage_entry                              *diffview-actions-toggle_stage_entry*
         Contexts: `diff_view`, `file_panel`
 
@@ -1360,6 +1410,10 @@ gf                      Open the local version of the file in a different
                                                 *diffview-maps-focus_files*
 <leader>e               Bring focus to the file panel.
 
+                                                *diffview-maps-toggle_reviewed*
+<leader>r               Toggle the reviewed state of the current file. See
+                        |diffview-review-tracking|.
+
                                                 *diffview-maps-copy_hash*
 y                       Copy the commit hash of the entry under the cursor.
 
@@ -1383,6 +1437,10 @@ o                       Open the diff for the selected file entry.
 
                                                 *diffview-maps-toggle_stage_entry*
 -                       Stage/unstage the selected file entry.
+
+<leader>r               Toggle the reviewed state of the entry under the
+                        cursor. If the entry is a directory, all the files it
+                        contains are toggled. See |diffview-review-tracking|.
 
                                                 *diffview-maps-stage_all*
 S                       Stage all entries.

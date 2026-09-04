@@ -189,6 +189,38 @@ return function(view)
         view.emitter:emit(EventName.FILES_STAGED, view)
       end
     end,
+    toggle_reviewed = function()
+      local item = view:infer_cur_file(true)
+      if not item then return end
+
+      if type(item.collapsed) == "boolean" then
+        ---@cast item DirData
+        -- A directory: mark all the files it contains as reviewed, unless
+        -- they all already are.
+        local files = vim.tbl_map(function(node)
+          return node.data
+        end, item._node:leaves()) --[[@as FileEntry[] ]]
+
+        local flag = false
+
+        for _, file in ipairs(files) do
+          if not file.reviewed then
+            flag = true
+            break
+          end
+        end
+
+        for _, file in ipairs(files) do
+          view:set_file_reviewed(file, flag)
+        end
+      else
+        ---@cast item FileEntry
+        view:set_file_reviewed(item, not item.reviewed)
+      end
+
+      view.panel:render()
+      view.panel:redraw()
+    end,
     stage_all = function()
       local args = vim.tbl_map(function(file)
         return file.path

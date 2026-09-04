@@ -446,6 +446,7 @@ M.hl_links = {
   FilePanelInsertions = "diffAdded",
   FilePanelDeletions = "diffRemoved",
   FilePanelConflicts = "DiagnosticSignWarn",
+  FilePanelReviewed = "Comment",
   FolderName = "Directory",
   FolderSign = "PreProc",
   Hash = "Identifier",

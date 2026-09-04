@@ -30,6 +30,13 @@ local M = {}
 ---@field show_untracked? boolean
 ---@field selected_file? string Path to the preferred initially selected file.
 
+---The state of a file at the point when it was marked as reviewed. Only
+---recorded for the local file, and only when the working tree is one of the
+---sides of the diff.
+---@class DiffView.ReviewMark
+---@field mtime? number
+---@field size? integer
+
 ---@class DiffView : StandardView
 ---@operator call : DiffView
 ---@field adapter VCSAdapter
@@ -42,6 +49,7 @@ local M = {}
 ---@field commit_log_panel CommitLogPanel
 ---@field files FileDict
 ---@field file_idx integer
+---@field reviewed_paths table<string, DiffView.ReviewMark> # Files marked as reviewed.
 ---@field merge_ctx? vcs.MergeContext
 ---@field initialized boolean
 ---@field valid boolean
@@ -58,6 +66,7 @@ function DiffView:init(opt)
   self.left = opt.left
   self.right = opt.right
   self.initialized = false
+  self.reviewed_paths = {}
   self.options = opt.options or {}
   self.options.selected_file = self.options.selected_file
     and pl:chain(self.options.selected_file)
@@ -397,6 +406,14 @@ DiffView.update_files = debounce.debounce_trailing(
           local a_stats = v.cur_files[ai].stats
           local b_stats = v.new_files[bi].stats
 
+          -- The diff changed: the file needs to be reviewed again.
+          if v.cur_files[ai].status ~= v.new_files[bi].status
+            or (a_stats and a_stats.additions) ~= (b_stats and b_stats.additions)
+            or (a_stats and a_stats.deletions) ~= (b_stats and b_stats.deletions)
+          then
+            self.reviewed_paths[v.cur_files[ai].path] = nil
+          end
+
           if a_stats then
             v.cur_files[ai].stats = vim.tbl_extend("force", a_stats, b_stats or {})
           else
@@ -460,6 +477,25 @@ DiffView.update_files = debounce.debounce_trailing(
     end
 
     FileEntry.update_index_stat(self.adapter, index_stat)
+
+    -- Entries may have been recreated during the update: restore their
+    -- reviewed state. Files that have been edited since they were reviewed,
+    -- and files that are no longer listed, lose their mark.
+    local reviewed_paths = {}
+
+    for _, file in self.files:iter() do
+      local mark = self.reviewed_paths[file.path]
+
+      if mark and not self:review_mark_is_stale(file, mark) then
+        reviewed_paths[file.path] = mark
+        file.reviewed = true
+      else
+        file.reviewed = false
+      end
+    end
+
+    self.reviewed_paths = reviewed_paths
+
     self.files:update_file_trees()
     self.panel:update_components()
     self.panel:render()
@@ -496,6 +532,46 @@ DiffView.update_files = debounce.debounce_trailing(
     callback()
   end)
 )
+
+---Mark a file entry as reviewed / unreviewed. The state is kept for as long
+---as the view is open, and is restored on entries that are recreated when the
+---file list is updated.
+---@param file FileEntry
+---@param flag boolean
+function DiffView:set_file_reviewed(file, flag)
+  file.reviewed = flag
+
+  if not flag then
+    self.reviewed_paths[file.path] = nil
+    return
+  end
+
+  -- Record the state of the local file such that we can tell if it's edited
+  -- after it was marked. Only relevant when the working tree is being diffed:
+  -- otherwise the diff can only change through its stats.
+  local stat = self.adapter:has_local(self.left, self.right)
+    and pl:stat(file.absolute_path)
+    or nil
+
+  self.reviewed_paths[file.path] = {
+    mtime = stat and (stat.mtime.sec + stat.mtime.nsec * 1e-9),
+    size = stat and stat.size,
+  }
+end
+
+---Check whether the local file has been edited since it was marked as
+---reviewed.
+---@param file FileEntry
+---@param mark DiffView.ReviewMark
+---@return boolean
+function DiffView:review_mark_is_stale(file, mark)
+  if not mark.mtime then return false end
+
+  local stat = pl:stat(file.absolute_path)
+  if not stat then return true end
+
+  return (stat.mtime.sec + stat.mtime.nsec * 1e-9) ~= mark.mtime or stat.size ~= mark.size
+end
 
 ---Ensures there are files to load, and loads the null buffer otherwise.
 ---@return boolean

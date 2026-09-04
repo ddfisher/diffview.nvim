@@ -46,6 +46,10 @@ command("DiffviewToggleFiles", function()
   diffview.emit("toggle_files")
 end, { nargs = 0, bang = true })
 
+command("DiffviewToggleReviewed", function()
+  diffview.emit("toggle_reviewed")
+end, { nargs = 0, bang = true })
+
 command("DiffviewRefresh", function()
   diffview.emit("refresh_files")
 end, { nargs = 0, bang = true })

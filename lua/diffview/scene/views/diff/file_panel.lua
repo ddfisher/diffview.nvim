@@ -6,6 +6,10 @@ local Panel = require("diffview.ui.panel").Panel
 local api = vim.api
 local M = {}
 
+---@class DiffStats
+---@field additions integer
+---@field deletions integer
+
 ---@class TreeOptions
 ---@field flatten_dirs boolean
 ---@field folder_statuses "never"|"only_folded"|"always"
@@ -146,6 +150,7 @@ function FilePanel:update_components()
   ---@type CompStruct
   self.components = self.render_data:create_component({
     { name = "path" },
+    { name = "summary" },
     {
       name = "conflicting",
       { name = "title" },
@@ -176,6 +181,32 @@ function FilePanel:update_components()
     self.components.working.files.comp,
     self.components.staged.files.comp,
   })
+end
+
+---Sum up the diff stats for all the entries in the panel, and for only the
+---entries that have not been marked as reviewed.
+---@return DiffStats total
+---@return DiffStats unreviewed
+function FilePanel:get_stats_summary()
+  local total = { additions = 0, deletions = 0 }
+  local unreviewed = { additions = 0, deletions = 0 }
+
+  for _, file in self.files:iter() do
+    local stats = file.stats
+
+    -- Entries without line stats (binaries, conflicts) are not counted.
+    if stats and stats.additions and stats.deletions then
+      total.additions = total.additions + stats.additions
+      total.deletions = total.deletions + stats.deletions
+
+      if not file.reviewed then
+        unreviewed.additions = unreviewed.additions + stats.additions
+        unreviewed.deletions = unreviewed.deletions + stats.deletions
+      end
+    end
+  end
+
+  return total, unreviewed
 end
 
 ---@return FileEntry[]

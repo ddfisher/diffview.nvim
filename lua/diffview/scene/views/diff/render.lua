@@ -4,43 +4,65 @@ local utils = require("diffview.utils")
 
 local pl = utils.path
 
+---Files that have been marked as reviewed are rendered dimmed: this returns
+---the dim highlight group in place of the given group for such entries.
+---@param reviewed boolean
+---@param hl_group string?
+---@return string?
+local function dim(reviewed, hl_group)
+  if reviewed then return "DiffviewFilePanelReviewed" end
+  return hl_group
+end
+
 ---@param comp  RenderComponent
 ---@param show_path boolean
 ---@param depth integer|nil
 local function render_file(comp, show_path, depth)
   ---@type FileEntry
   local file = comp.context
+  local conf = config.get_config()
+  local reviewed = not not file.reviewed
 
-  comp:add_text(file.status .. " ", hl.get_git_hl(file.status))
+  comp:add_text(file.status .. " ", dim(reviewed, hl.get_git_hl(file.status)))
 
   if depth then
     comp:add_text(string.rep(" ", depth * 2 + 2))
   end
 
   local icon, icon_hl = hl.get_file_icon(file.basename, file.extension)
-  comp:add_text(icon, icon_hl)
-  comp:add_text(file.basename, file.active and "DiffviewFilePanelSelected" or "DiffviewFilePanelFileName")
+  comp:add_text(icon, dim(reviewed, icon_hl))
+  comp:add_text(
+    file.basename,
+    dim(reviewed, file.active and "DiffviewFilePanelSelected" or "DiffviewFilePanelFileName")
+  )
+
+  if reviewed then
+    comp:add_text(" " .. conf.signs.done, "DiffviewFilePanelReviewed")
+  end
 
   if file.stats then
     if file.stats.additions then
-      comp:add_text(" " .. file.stats.additions, "DiffviewFilePanelInsertions")
-      comp:add_text(", ")
-      comp:add_text(tostring(file.stats.deletions), "DiffviewFilePanelDeletions")
+      comp:add_text(" " .. file.stats.additions, dim(reviewed, "DiffviewFilePanelInsertions"))
+      comp:add_text(", ", dim(reviewed, nil))
+      comp:add_text(tostring(file.stats.deletions), dim(reviewed, "DiffviewFilePanelDeletions"))
     elseif file.stats.conflicts then
       local has_conflicts = file.stats.conflicts > 0
+      local conflicts_hl = has_conflicts and "DiffviewFilePanelConflicts"
+        or "DiffviewFilePanelInsertions"
+
       comp:add_text(
-        " " .. (has_conflicts and file.stats.conflicts or config.get_config().signs.done),
-        has_conflicts and "DiffviewFilePanelConflicts" or "DiffviewFilePanelInsertions"
+        " " .. (has_conflicts and file.stats.conflicts or conf.signs.done),
+        dim(reviewed, conflicts_hl)
       )
     end
   end
 
   if file.kind == "conflicting" and not (file.stats and file.stats.conflicts) then
-    comp:add_text(" !", "DiffviewFilePanelConflicts")
+    comp:add_text(" !", dim(reviewed, "DiffviewFilePanelConflicts"))
   end
 
   if show_path then
-    comp:add_text(" " .. file.parent_path, "DiffviewFilePanelPath")
+    comp:add_text(" " .. file.parent_path, dim(reviewed, "DiffviewFilePanelPath"))
   end
 
   comp:ln()
@@ -66,6 +88,26 @@ local function get_dir_status_text(ctx, tree_options)
   return " "
 end
 
+---Check whether every file in the subtree of a file tree component has been
+---marked as reviewed.
+---@param comp RenderComponent
+---@return boolean
+local function is_subtree_reviewed(comp)
+  if comp.name == "file" then
+    return not not (comp.context --[[@as FileEntry ]]).reviewed
+  end
+
+  if comp.name ~= "directory" then return false end
+
+  local items = comp.components[2]
+
+  for _, item in ipairs(items.components) do
+    if not is_subtree_reviewed(item) then return false end
+  end
+
+  return #items.components > 0
+end
+
 ---@param depth integer
 ---@param comp RenderComponent
 local function render_file_tree_recurse(depth, comp)
@@ -89,22 +131,26 @@ local function render_file_tree_recurse(depth, comp)
   local dir = comp.components[1]
   local items = comp.components[2]
   local ctx = comp.context --[[@as DirData ]]
+  local reviewed = is_subtree_reviewed(comp)
 
   dir:add_text(
     get_dir_status_text(ctx, conf.file_panel.tree_options) .. " ",
-    hl.get_git_hl(ctx.status)
+    dim(reviewed, hl.get_git_hl(ctx.status))
   )
   dir:add_text(string.rep(" ", depth * 2))
-  dir:add_text(ctx.collapsed and conf.signs.fold_closed or conf.signs.fold_open, "DiffviewNonText")
+  dir:add_text(
+    ctx.collapsed and conf.signs.fold_closed or conf.signs.fold_open,
+    dim(reviewed, "DiffviewNonText")
+  )
 
   if conf.use_icons then
     dir:add_text(
       " " .. (ctx.collapsed and conf.icons.folder_closed or conf.icons.folder_open) .. " ",
-      "DiffviewFolderSign"
+      dim(reviewed, "DiffviewFolderSign")
     )
   end
 
-  dir:add_text(ctx.name, "DiffviewFolderName")
+  dir:add_text(ctx.name, dim(reviewed, "DiffviewFolderName"))
   dir:ln()
 
   if not ctx.collapsed then
@@ -150,6 +196,25 @@ return function(panel)
   if conf.show_help_hints and panel.help_mapping then
     comp:add_text("Help: ", "DiffviewFilePanelPath")
     comp:add_line(panel.help_mapping, "DiffviewFilePanelCounter")
+    comp:add_line()
+  end
+
+  do
+    local total, unreviewed = panel:get_stats_summary()
+
+    comp = panel.components.summary.comp
+
+    for _, item in ipairs({
+      { label = "Total:      ", stats = total },
+      { label = "Unreviewed: ", stats = unreviewed },
+    }) do
+      comp:add_text(item.label, "DiffviewFilePanelTitle")
+      comp:add_text("+" .. item.stats.additions, "DiffviewFilePanelInsertions")
+      comp:add_text(" ")
+      comp:add_text("-" .. item.stats.deletions, "DiffviewFilePanelDeletions")
+      comp:ln()
+    end
+
     comp:add_line()
   end
 
