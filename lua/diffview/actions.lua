@@ -644,6 +644,7 @@ local action_names = {
   "toggle_flatten_dirs",
   "toggle_fold",
   "toggle_reviewed",
+  "toggle_show_reviewed",
   "toggle_stage_entry",
   "unstage_all",
 }

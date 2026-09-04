@@ -22,6 +22,7 @@ local M = {}
 ---@field cur_file FileEntry
 ---@field listing_style "list"|"tree"
 ---@field tree_options TreeOptions
+---@field show_reviewed boolean # Whether files marked as reviewed are listed.
 ---@field render_data RenderData
 ---@field components CompStruct
 ---@field constrain_cursor function
@@ -62,6 +63,7 @@ function FilePanel:init(adapter, files, path_args, rev_pretty_name)
   self.rev_pretty_name = rev_pretty_name
   self.listing_style = conf.file_panel.listing_style
   self.tree_options = conf.file_panel.tree_options
+  self.show_reviewed = true
 
   self:on_autocmd("BufNew", {
     callback = function()
@@ -89,10 +91,18 @@ function FilePanel:setup_buffer()
   if help_keymap then self.help_mapping = help_keymap[2] end
 end
 
+---Check whether a file entry should be listed in the panel.
+---@param file FileEntry
+---@return boolean
+function FilePanel:is_file_visible(file)
+  return self.show_reviewed or not file.reviewed
+end
+
 function FilePanel:update_components()
   local conflicting_files
   local working_files
   local staged_files
+  local filter = utils.bind(self.is_file_visible, self)
 
   if self.listing_style == "list" then
     conflicting_files = { name = "files" }
@@ -100,24 +110,30 @@ function FilePanel:update_components()
     staged_files = { name = "files" }
 
     for _, file in ipairs(self.files.conflicting) do
-      table.insert(conflicting_files, {
-        name = "file",
-        context = file,
-      })
+      if filter(file) then
+        table.insert(conflicting_files, {
+          name = "file",
+          context = file,
+        })
+      end
     end
 
     for _, file in ipairs(self.files.working) do
-      table.insert(working_files, {
-        name = "file",
-        context = file,
-      })
+      if filter(file) then
+        table.insert(working_files, {
+          name = "file",
+          context = file,
+        })
+      end
     end
 
     for _, file in ipairs(self.files.staged) do
-      table.insert(staged_files, {
-        name = "file",
-        context = file,
-      })
+      if filter(file) then
+        table.insert(staged_files, {
+          name = "file",
+          context = file,
+        })
+      end
     end
 
   elseif self.listing_style == "tree" then
@@ -129,6 +145,7 @@ function FilePanel:update_components()
       { name = "files" },
       self.files.conflicting_tree:create_comp_schema({
         flatten_dirs = self.tree_options.flatten_dirs,
+        filter = filter,
       })
     )
 
@@ -136,6 +153,7 @@ function FilePanel:update_components()
       { name = "files" },
       self.files.working_tree:create_comp_schema({
         flatten_dirs = self.tree_options.flatten_dirs,
+        filter = filter,
       })
     )
 
@@ -143,6 +161,7 @@ function FilePanel:update_components()
       { name = "files" },
       self.files.staged_tree:create_comp_schema({
         flatten_dirs = self.tree_options.flatten_dirs,
+        filter = filter,
       })
     )
   end
@@ -209,16 +228,17 @@ function FilePanel:get_stats_summary()
   return total, unreviewed
 end
 
+---The listed file entries, in the order they appear in the panel.
 ---@return FileEntry[]
 function FilePanel:ordered_file_list()
+  local list = {}
+
   if self.listing_style == "list" then
-    local list = {}
-
     for _, file in self.files:iter() do
-      list[#list + 1] = file
+      if self:is_file_visible(file) then
+        list[#list + 1] = file
+      end
     end
-
-    return list
   else
     local nodes = utils.vec_join(
       self.files.conflicting_tree.root:leaves(),
@@ -226,10 +246,14 @@ function FilePanel:ordered_file_list()
       self.files.staged_tree.root:leaves()
     )
 
-    return vim.tbl_map(function(node)
-      return node.data
-    end, nodes) --[[@as vector ]]
+    for _, node in ipairs(nodes) do
+      if self:is_file_visible(node.data) then
+        list[#list + 1] = node.data
+      end
+    end
   end
+
+  return list
 end
 
 function FilePanel:set_cur_file(file)
@@ -245,7 +269,7 @@ end
 
 function FilePanel:prev_file()
   local files = self:ordered_file_list()
-  if not self.cur_file and self.files:len() > 0 then
+  if not self.cur_file and #files > 0 then
     self:set_cur_file(files[1])
     return self.cur_file
   end
@@ -259,7 +283,7 @@ end
 
 function FilePanel:next_file()
   local files = self:ordered_file_list()
-  if not self.cur_file and self.files:len() > 0 then
+  if not self.cur_file and #files > 0 then
     self:set_cur_file(files[1])
     return self.cur_file
   end

@@ -167,6 +167,35 @@ local function render_file_tree(comp)
   end
 end
 
+---Render a section title, followed by the number of entries in the section,
+---and how many of them are still waiting to be reviewed.
+---@param comp RenderComponent
+---@param label string
+---@param files FileEntry[]
+local function render_section_title(comp, label, files)
+  local unreviewed = 0
+
+  for _, file in ipairs(files) do
+    if not file.reviewed then unreviewed = unreviewed + 1 end
+  end
+
+  comp:add_text(label .. " ", "DiffviewFilePanelTitle")
+  comp:add_text("(" .. #files .. ")", "DiffviewFilePanelCounter")
+
+  -- Only interesting once something in the section has been reviewed:
+  -- otherwise this is just the entry count over again.
+  if unreviewed < #files then
+    if unreviewed == 0 then
+      comp:add_text("  " .. config.get_config().signs.done, "DiffviewFilePanelReviewed")
+    else
+      comp:add_text("  " .. unreviewed, "DiffviewFilePanelCounter")
+      comp:add_text(" unreviewed", "DiffviewFilePanelPath")
+    end
+  end
+
+  comp:ln()
+end
+
 ---@param listing_style "list"|"tree"
 ---@param comp RenderComponent
 local function render_files(listing_style, comp)
@@ -219,10 +248,11 @@ return function(panel)
   end
 
   if #panel.files.conflicting > 0 then
-    comp = panel.components.conflicting.title.comp
-    comp:add_text("Conflicts ", "DiffviewFilePanelTitle")
-    comp:add_text("(" .. #panel.files.conflicting .. ")", "DiffviewFilePanelCounter")
-    comp:ln()
+    render_section_title(
+      panel.components.conflicting.title.comp,
+      "Conflicts",
+      panel.files.conflicting
+    )
 
     render_files(panel.listing_style, panel.components.conflicting.files.comp)
     panel.components.conflicting.margin.comp:add_line()
@@ -233,20 +263,14 @@ return function(panel)
   -- Don't show the 'Changes' section if it's empty and we have other visible
   -- sections.
   if #panel.files.working > 0 or not has_other_files then
-    comp = panel.components.working.title.comp
-    comp:add_text("Changes ", "DiffviewFilePanelTitle")
-    comp:add_text("(" .. #panel.files.working .. ")", "DiffviewFilePanelCounter")
-    comp:ln()
+    render_section_title(panel.components.working.title.comp, "Changes", panel.files.working)
 
     render_files(panel.listing_style, panel.components.working.files.comp)
     panel.components.working.margin.comp:add_line()
   end
 
   if #panel.files.staged > 0 then
-    comp = panel.components.staged.title.comp
-    comp:add_text("Staged changes ", "DiffviewFilePanelTitle")
-    comp:add_text("(" .. #panel.files.staged .. ")", "DiffviewFilePanelCounter")
-    comp:ln()
+    render_section_title(panel.components.staged.title.comp, "Staged changes", panel.files.staged)
 
     render_files(panel.listing_style, panel.components.staged.files.comp)
     panel.components.staged.margin.comp:add_line()

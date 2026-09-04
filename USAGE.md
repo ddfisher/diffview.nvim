@@ -78,6 +78,20 @@ files get a check mark and are grayed out, and in the tree listing style a
 directory is grayed out once everything in it has been reviewed. Pressing it on
 a directory marks all the files it contains as reviewed at once.
 
+As soon as you've reviewed something in a section, its title starts counting
+what's left:
+
+```
+Changes (12)  5 unreviewed
+Staged changes (3)  ✓
+```
+
+Press `<leader>R` (`actions.toggle_show_reviewed`) to hide the files you've
+already been through, so the panel only shows the work that's left. `<Tab>` and
+the other entry-navigation mappings skip the hidden files too, which makes for
+a decent "work through the queue" loop: `<Tab>` to the next file, read it,
+`<leader>r`, repeat.
+
 A file is unmarked again as soon as its diff changes - if its status or its
 added/deleted line counts change, if it's edited on disk while the working tree
 is one of the sides of the diff (`--imply-local`, or `:DiffviewOpen` with no

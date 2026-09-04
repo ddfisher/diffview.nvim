@@ -218,8 +218,19 @@ return function(view)
         view:set_file_reviewed(item, not item.reviewed)
       end
 
-      view.panel:render()
-      view.panel:redraw()
+      if view.panel.show_reviewed then
+        view.panel:render()
+        view.panel:redraw()
+      else
+        -- The entry is leaving the list: rebuild it.
+        view.panel:sync()
+        view.panel:reconstrain_cursor()
+      end
+    end,
+    toggle_show_reviewed = function()
+      view.panel.show_reviewed = not view.panel.show_reviewed
+      view.panel:sync()
+      view.panel:reconstrain_cursor()
     end,
     stage_all = function()
       local args = vim.tbl_map(function(file)

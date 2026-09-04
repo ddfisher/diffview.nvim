@@ -97,6 +97,11 @@ function FileTree:update_statuses()
   end
 end
 
+---@class FileTree.create_comp_schema.Opt
+---@field flatten_dirs boolean
+---@field filter? fun(file: FileEntry): boolean # Only include files for which this returns true.
+
+---@param data FileTree.create_comp_schema.Opt
 function FileTree:create_comp_schema(data)
   self.root:sort()
   ---@type CompSchema
@@ -106,6 +111,7 @@ function FileTree:create_comp_schema(data)
   ---@param node Node
   local function recurse(parent, node)
     if not node:has_children() then
+      if data.filter and not data.filter(node.data) then return end
       parent[#parent + 1] = { name = "file", context = node.data }
       return
     end
@@ -130,17 +136,20 @@ function FileTree:create_comp_schema(data)
     end
 
     local items = { name = "items" }
-    local struct = {
+
+    for _, child in ipairs(node.children) do
+      recurse(items, child)
+    end
+
+    -- Don't include directories that have no visible items.
+    if #items == 0 then return end
+
+    parent[#parent + 1] = {
       name = "directory",
       context = dir_data,
       { name = "dir_name" },
       items,
     }
-    parent[#parent + 1] = struct
-
-    for _, child in ipairs(node.children) do
-      recurse(items, child)
-    end
   end
 
   for _, node in ipairs(self.root.children) do
