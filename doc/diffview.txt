@@ -47,33 +47,12 @@ Visit the help page for more info.
                                                 *diffview-review-tracking*
 Review Tracking ~
 
-The file panel of a Diffview shows a summary of the changes at the top:
-
->
-    Total:      +142 -37
-    Unreviewed: +58 -12
-<
-
-`Total` is the sum of the added and deleted lines across all the entries in
-the panel. `Unreviewed` is the same sum, but counting only the entries that
-have not been marked as reviewed, and it only shows up once something has
-actually been marked. Entries without line stats - such as untracked files and
-binaries - are not counted.
-
 Use |diffview-actions-toggle_reviewed| (`<leader>r` by default, or
 |:DiffviewToggleReviewed|) to toggle the reviewed state of a file. Reviewed
 files are marked with a check mark, and are grayed out in the file panel
 (see the `DiffviewFilePanelReviewed` highlight group). In the file tree
 listing style, a directory is grayed out once all the files it contains have
 been marked as reviewed.
-
-Once anything in a section has been reviewed, its title shows how many entries
-are still left to review, or a check mark when the whole section is done:
-
->
-    Changes (12 files, 5 unreviewed)
-    Staged changes (3 files, ✓)
-<
 
 Use |diffview-actions-toggle_show_reviewed| (`<leader>R` by default, from the
 file panel or from any of the diff buffers) to hide the entries that have been
@@ -82,20 +61,11 @@ entries are also skipped by the actions that move between entries. The section
 titles keep counting all the entries, such that you can still see how much of
 each section is done.
 
-While entries are being hidden, the summary at the top says how many:
-
->
-    Total:      +142 -37
-    Unreviewed: +58 -12
-    7 reviewed files hidden
-<
-
 The reviewed state is only kept for as long as the Diffview is open, and is
 tracked by file path: entries that are recreated when the file list is updated
 keep their state.
 
-A file is unmarked again when its diff changes, such that you don't carry a
-stale mark for a file you'll want to look at again. This happens when:
+A file is unmarked again when its diff changes. This happens when:
 
         • The file's status, or its number of added or deleted lines changed.
         • The file is edited on disk, while the working tree is one of the
