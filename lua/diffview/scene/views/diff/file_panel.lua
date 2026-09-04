@@ -206,12 +206,16 @@ end
 ---entries that have not been marked as reviewed.
 ---@return DiffStats total
 ---@return DiffStats unreviewed
+---@return integer reviewed_count # The number of entries marked as reviewed.
 function FilePanel:get_stats_summary()
   local total = { additions = 0, deletions = 0 }
   local unreviewed = { additions = 0, deletions = 0 }
+  local reviewed_count = 0
 
   for _, file in self.files:iter() do
     local stats = file.stats
+
+    if file.reviewed then reviewed_count = reviewed_count + 1 end
 
     -- Entries without line stats (binaries, conflicts) are not counted.
     if stats and stats.additions and stats.deletions then
@@ -225,7 +229,7 @@ function FilePanel:get_stats_summary()
     end
   end
 
-  return total, unreviewed
+  return total, unreviewed, reviewed_count
 end
 
 ---The listed file entries, in the order they appear in the panel.

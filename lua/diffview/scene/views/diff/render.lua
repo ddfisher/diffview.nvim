@@ -237,15 +237,23 @@ return function(panel)
   end
 
   do
-    local total, unreviewed = panel:get_stats_summary()
+    local total, unreviewed, reviewed_count = panel:get_stats_summary()
 
     comp = panel.components.summary.comp
 
-    for _, item in ipairs({
-      { label = "Total:      ", stats = total },
-      { label = "Unreviewed: ", stats = unreviewed },
-    }) do
-      comp:add_text(item.label, "DiffviewFilePanelTitle")
+    local rows = { { label = "Total:", stats = total } }
+    local label_width = #rows[1].label
+
+    -- Until something has been reviewed this would just repeat the total.
+    if reviewed_count > 0 then
+      rows[#rows + 1] = { label = "Unreviewed:", stats = unreviewed }
+      label_width = math.max(label_width, #rows[2].label)
+    end
+
+    for _, item in ipairs(rows) do
+      local pad = string.rep(" ", label_width - #item.label + 1)
+
+      comp:add_text(item.label .. pad, "DiffviewFilePanelTitle")
       comp:add_text("+" .. item.stats.additions, "DiffviewFilePanelInsertions")
       comp:add_text(" ")
       comp:add_text("-" .. item.stats.deletions, "DiffviewFilePanelDeletions")

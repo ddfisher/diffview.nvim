@@ -69,7 +69,8 @@ Unreviewed: +58 -12
 
 `Total` is the number of added and deleted lines across all the entries in the
 panel, and `Unreviewed` counts only the entries that haven't been marked as
-reviewed yet.
+reviewed yet - it appears once you've marked something, and until then only the
+`Total` line is shown.
 
 Press `<leader>r` (`actions.toggle_reviewed`, also available as
 `:DiffviewToggleReviewed`) to toggle the reviewed state of the file under the
