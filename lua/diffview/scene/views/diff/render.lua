@@ -180,19 +180,27 @@ local function render_section_title(comp, label, files)
   end
 
   comp:add_text(label .. " ", "DiffviewFilePanelTitle")
-  comp:add_text("(" .. #files .. ")", "DiffviewFilePanelCounter")
 
-  -- Only interesting once something in the section has been reviewed:
-  -- otherwise this is just the entry count over again.
-  if unreviewed < #files then
-    if unreviewed == 0 then
-      comp:add_text("  " .. config.get_config().signs.done, "DiffviewFilePanelReviewed")
-    else
-      comp:add_text("  " .. unreviewed, "DiffviewFilePanelCounter")
-      comp:add_text(" unreviewed", "DiffviewFilePanelPath")
-    end
+  -- The unreviewed count is only interesting once something in the section has
+  -- been reviewed: otherwise it's just the entry count over again.
+  if unreviewed == #files then
+    comp:add_text("(" .. #files .. ")", "DiffviewFilePanelCounter")
+    comp:ln()
+    return
   end
 
+  comp:add_text("(", "DiffviewFilePanelPath")
+  comp:add_text(tostring(#files), "DiffviewFilePanelCounter")
+  comp:add_text((" %s, "):format(#files == 1 and "file" or "files"), "DiffviewFilePanelPath")
+
+  if unreviewed == 0 then
+    comp:add_text(config.get_config().signs.done, "DiffviewFilePanelReviewed")
+  else
+    comp:add_text(tostring(unreviewed), "DiffviewFilePanelCounter")
+    comp:add_text(" unreviewed", "DiffviewFilePanelPath")
+  end
+
+  comp:add_text(")", "DiffviewFilePanelPath")
   comp:ln()
 end
 
@@ -242,6 +250,15 @@ return function(panel)
       comp:add_text(" ")
       comp:add_text("-" .. item.stats.deletions, "DiffviewFilePanelDeletions")
       comp:ln()
+    end
+
+    local hidden = panel:hidden_file_count()
+
+    if hidden > 0 then
+      comp:add_line(
+        ("%d reviewed %s hidden"):format(hidden, hidden == 1 and "file" or "files"),
+        "DiffviewFilePanelPath"
+      )
     end
 
     comp:add_line()

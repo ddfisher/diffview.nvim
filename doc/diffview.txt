@@ -70,15 +70,24 @@ Once anything in a section has been reviewed, its title shows how many entries
 are still left to review, or a check mark when the whole section is done:
 
 >
-    Changes (12)  5 unreviewed
-    Staged changes (3)  ✓
+    Changes (12 files, 5 unreviewed)
+    Staged changes (3 files, ✓)
 <
 
-Use |diffview-actions-toggle_show_reviewed| (`<leader>R` by default) to hide
-the entries that have been marked as reviewed, leaving only the work that's
-left in the panel. Hidden entries are also skipped by the actions that move
-between entries. The section titles keep counting all the entries, such that
-you can still see how much of each section is done.
+Use |diffview-actions-toggle_show_reviewed| (`<leader>R` by default, from the
+file panel or from any of the diff buffers) to hide the entries that have been
+marked as reviewed, leaving only the work that's left in the panel. Hidden
+entries are also skipped by the actions that move between entries. The section
+titles keep counting all the entries, such that you can still see how much of
+each section is done.
+
+While entries are being hidden, the summary at the top says how many:
+
+>
+    Total:      +142 -37
+    Unreviewed: +58 -12
+    7 reviewed files hidden
+<
 
 The reviewed state is only kept for as long as the Diffview is open, and is
 tracked by file path: entries that are recreated when the file list is updated
@@ -1434,6 +1443,11 @@ gf                      Open the local version of the file in a different
 <leader>r               Toggle the reviewed state of the current file. See
                         |diffview-review-tracking|.
 
+                                                *diffview-maps-toggle_show_reviewed*
+<leader>R               Toggle whether the entries marked as reviewed are
+                        listed in the file panel. See
+                        |diffview-review-tracking|.
+
                                                 *diffview-maps-copy_hash*
 y                       Copy the commit hash of the entry under the cursor.
 
@@ -1462,7 +1476,6 @@ o                       Open the diff for the selected file entry.
                         cursor. If the entry is a directory, all the files it
                         contains are toggled. See |diffview-review-tracking|.
 
-                                                *diffview-maps-toggle_show_reviewed*
 <leader>R               Toggle whether the entries marked as reviewed are
                         listed. See |diffview-review-tracking|.
 

@@ -132,6 +132,7 @@ M.defaults = {
       { "n", "<leader>e",   actions.focus_files,                    { desc = "Bring focus to the file panel" } },
       { "n", "<leader>b",   actions.toggle_files,                   { desc = "Toggle the file panel." } },
       { "n", "<leader>r",   actions.toggle_reviewed,                { desc = "Toggle the reviewed state of the current file" } },
+      { "n", "<leader>R",   actions.toggle_show_reviewed,           { desc = "Toggle visibility of the files marked as reviewed" } },
       { "n", "g<C-x>",      actions.cycle_layout,                   { desc = "Cycle through available layouts." } },
       { "n", "[x",          actions.prev_conflict,                  { desc = "In the merge-tool: jump to the previous conflict" } },
       { "n", "]x",          actions.next_conflict,                  { desc = "In the merge-tool: jump to the next conflict" } },

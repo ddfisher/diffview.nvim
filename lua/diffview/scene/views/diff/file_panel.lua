@@ -229,6 +229,21 @@ function FilePanel:get_stats_summary()
 end
 
 ---The listed file entries, in the order they appear in the panel.
+---The number of file entries that are currently left out of the listing
+---because they have been marked as reviewed.
+---@return integer
+function FilePanel:hidden_file_count()
+  if self.show_reviewed then return 0 end
+
+  local count = 0
+
+  for _, file in self.files:iter() do
+    if not self:is_file_visible(file) then count = count + 1 end
+  end
+
+  return count
+end
+
 ---@return FileEntry[]
 function FilePanel:ordered_file_list()
   local list = {}

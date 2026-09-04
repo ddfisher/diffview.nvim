@@ -82,15 +82,25 @@ As soon as you've reviewed something in a section, its title starts counting
 what's left:
 
 ```
-Changes (12)  5 unreviewed
-Staged changes (3)  ✓
+Changes (12 files, 5 unreviewed)
+Staged changes (3 files, ✓)
 ```
 
 Press `<leader>R` (`actions.toggle_show_reviewed`) to hide the files you've
 already been through, so the panel only shows the work that's left. `<Tab>` and
 the other entry-navigation mappings skip the hidden files too, which makes for
 a decent "work through the queue" loop: `<Tab>` to the next file, read it,
-`<leader>r`, repeat.
+`<leader>r`, repeat. Both mappings work from the file panel and from the diff
+buffers.
+
+While files are hidden, the summary keeps a quiet note of how many, so you
+don't lose track of them:
+
+```
+Total:      +142 -37
+Unreviewed: +58 -12
+7 reviewed files hidden
+```
 
 A file is unmarked again as soon as its diff changes - if its status or its
 added/deleted line counts change, if it's edited on disk while the working tree
